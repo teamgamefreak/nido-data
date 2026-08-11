@@ -117,7 +117,7 @@
     <script src="capacitor.js"></script>
     <script>
         const SUPABASE_URL = "https://iykeycdjjzpxmfbkhvzd.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5a2V5Y2RqanpweG1mYmtodnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzIyMjMsImV4cCI6MjEwMjAwODIyM30.kgH0Yuq-X2CAt7-JTsAvQHhFXPge6O3aMnQeaGKTKpg";
+        const SUPABASE_KEY = "sb_publishable_0OSp-YLaZIQMjU5E0mNiLw_6PKo6QED";
                 const imgUrl = 'https://raw.githubusercontent.com/teamgamefreak/nido-images/main/images/' + card.image + '?t=' + Date.now();
         let allData = [];
         let filter = 'all';
@@ -192,7 +192,7 @@
             pageCards.forEach((card, idx) => {
                 const absoluteIndex = allData.findIndex(c => c.id === card.id);
                 const div = document.createElement('div');
-                const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5a2V5Y2RqanpweG1mYmtodnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzIyMjMsImV4cCI6MjEwMjAwODIyM30.kgH0Yuq-X2CAt7-JTsAvQHhFXPge6O3aMnQeaGKTKpg";
+                const SUPABASE_KEY = "sb_publishable_0OSp-YLaZIQMjU5E0mNiLw_6PKo6QED";
                         const imgUrl = 'https://raw.githubusercontent.com/teamgamefreak/nido-images/main/images/' + card.image + '?t=' + Date.now();
                 div.innerHTML = '<img src="' + imgUrl + '"><div class="card-name">' + card.set + '</div>';
                 div.onclick = () => { 
