@@ -116,9 +116,9 @@
 
     <script src="capacitor.js"></script>
     <script>
-        const SUPABASE_URL = "https://ciwuqspejmsaxwpibyjj.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpd3Vxc3Blam1zYXh3cGlieWpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MjM2NzMsImV4cCI6MjEwMTQ5OTY3M30.cNOEk-mffXt-vWtm_EHn8feSPy3SahvajxzRd8oQ6vY";
-        
+        const SUPABASE_URL = "https://iykeycdjjzpxmfbkhvzd.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5a2V5Y2RqanpweG1mYmtodnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MjM2NzMsImV4cCI6MjEwMTQ5OTY3M30.4qjQ1B5O3N8KxT-vK9MhX25r1t_V4iP7YqO2a3E9u4A";
+                const imgUrl = 'https://raw.githubusercontent.com/teamgamefreak/nido-images/main/images/' + card.image + '?t=' + Date.now();
         let allData = [];
         let filter = 'all';
         let searchQuery = '';
@@ -192,8 +192,8 @@
             pageCards.forEach((card, idx) => {
                 const absoluteIndex = allData.findIndex(c => c.id === card.id);
                 const div = document.createElement('div');
-                div.className = 'card ' + (card.owned ? 'owned' : 'missing');
-                const imgUrl = 'https://raw.githubusercontent.com/teamgamefreak/pikachu-images/main/images/' + card.image + '?t=' + Date.now();
+                const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5a2V5Y2RqanpweG1mYmtodnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MjM2NzMsImV4cCI6MjEwMTQ5OTY3M30.4qjQ1B5O3N8KxT-vK9MhX25r1t_V4iP7YqO2a3E9u4A";
+                        const imgUrl = 'https://raw.githubusercontent.com/teamgamefreak/nido-images/main/images/' + card.image + '?t=' + Date.now();
                 div.innerHTML = '<img src="' + imgUrl + '"><div class="card-name">' + card.set + '</div>';
                 div.onclick = () => { 
                     activeId = card.id; 
