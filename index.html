@@ -7,16 +7,19 @@
     <style>
         body { font-family: sans-serif; background: #0a0a0a; color: white; margin: 0; padding: 2px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         .app-header { text-align: center; font-size: 16px; font-weight: bold; background: #2e1a47; padding: 10px; color: #4caf50; margin-bottom: 2px; flex-shrink: 0; border-bottom: 2px solid #8e44ad; }
-        .controls { display: flex; justify-content: space-around; padding: 4px; background: #181124; border-radius: 6px; margin-bottom: 2px; flex-shrink: 0; height: 32px; align-items: center; border: 1px solid #4a235a; }
+        .controls { display: flex; justify-content: space-around; padding: 4px; background: #181124; border-radius: 6px; margin-bottom: 2px; flex-shrink: 0; height: auto; min-height: 32px; align-items: center; border: 1px solid #4a235a; flex-wrap: wrap; gap: 5px; }
         .filter-btn { padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; background: #2a1b3d; color: #ccc; }
         .filter-btn.active { background: #4caf50; color: #fff; }
         
+        .grid-settings { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #ccc; }
+        .grid-settings select { background: #2a1b3d; color: white; border: 1px solid #4a235a; border-radius: 4px; padding: 2px; font-size: 11px; }
+
         #binder { 
             display: flex !important; 
             flex-wrap: wrap !important;
             align-content: flex-start !important;
             width: 100vw !important; 
-            height: 99vh !important; 
+            flex-grow: 1 !important;
             padding: 0 !important; 
             margin: 0 !important;
             background: #0a0a0a !important;
@@ -25,9 +28,9 @@
         }
         .card { 
             position: relative !important; 
-            flex: 0 0 25% !important;
-            max-width: 25% !important;
-            height: 25vh !important; 
+            flex: 0 0 var(--card-width, 25%) !important;
+            max-width: var(--card-width, 25%) !important;
+            height: var(--card-height, 25vh) !important; 
             background: #1a1a1a !important; 
             display: flex !important; 
             flex-direction: column !important; 
@@ -41,10 +44,9 @@
         .card.owned { border: 3px solid #4caf50 !important; }
         .card.missing { border: 3px solid #f44336 !important; }
         .card img { 
-            width: auto !important;
+            width: 100% !important;
             height: auto !important;
-            max-width: 95% !important;
-            max-height: 75% !important;
+            max-height: 80% !important;
             object-fit: contain !important; 
             display: block !important;
         }
@@ -84,6 +86,18 @@
         <button class="filter-btn active" id="f-all" onclick="setFilter('all')">Alle (<span id="n-all">0</span>)</button>
         <button class="filter-btn" id="f-owned" onclick="setFilter('owned')">Besitz (<span id="n-owned">0</span>)</button>
         <button class="filter-btn" id="f-missing" onclick="setFilter('missing')">Fehlend (<span id="n-missing">0</span>)</button>
+        <div class="grid-settings">
+            <span>Raster:</span>
+            <select id="grid-select" onchange="updateGridSettings()">
+                <option value="1x1">1x1</option>
+                <option value="1x2">1x2</option>
+                <option value="2x1">2x1</option>
+                <option value="2x2">2x2</option>
+                <option value="2x3">2x3</option>
+                <option value="3x3">3x3</option>
+                <option value="4x3" selected>4x3</option>
+            </select>
+        </div>
     </div>
     
     <div id="binder" class="binder-page"></div>
@@ -107,12 +121,27 @@
         let page = 0;
         let activeId = null;
         let searchTerm = '';
+        let gridCols = 4;
+        let gridRows = 3;
+
+        function updateGridSettings() {
+            const val = document.getElementById('grid-select').value;
+            const parts = val.split('x');
+            gridCols = parseInt(parts[0], 10);
+            gridRows = parseInt(parts[1], 10);
+
+            document.documentElement.style.setProperty('--card-width', (100 / gridCols) + '%');
+            document.documentElement.style.setProperty('--card-height', (100 / gridRows) + 'vh');
+
+            page = 0;
+            render();
+        }
+
         function getImageUrl(card) {
             return `https://raw.githubusercontent.com/teamgamefreak/nido-images/main/images/${card.image}?t=${Date.now()}`;
         }
 
         async function init() {
-            // Load local data.js first as fallback/primary if Supabase fails or isn't needed
             try {
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/cards?select=*`, {
                     headers: {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY}
@@ -122,7 +151,8 @@
             } catch (e) {
                 console.error("Supabase failed, checking local data...", e);
             }
-            render();
+            // Set initial grid size
+            updateGridSettings();
             setInterval(checkForChanges, 5000);
         }
 
@@ -171,8 +201,9 @@
             const filtered = getFilteredList();
             const container = document.getElementById('binder');
             container.innerHTML = '';
-            const start = page * 12;
-            filtered.slice(start, start + 12).forEach((card, idx) => {
+            const pageSize = gridCols * gridRows;
+            const start = page * pageSize;
+            filtered.slice(start, start + pageSize).forEach((card, idx) => {
                 const div = document.createElement('div');
                 div.className = 'card ' + (card.owned ? 'owned' : 'missing');
                 div.innerHTML = '<img src="' + getImageUrl(card) + '"><div class="card-name">' + card.set + '</div>';
@@ -184,7 +215,6 @@
                     
                     lbTitle.innerText = `${card.set || 'Pikachu'} ${card.number || '---'}`;
                     
-                    // Schalter-Logik
                     if (card.owned) {
                         lbStatusBtn.innerText = "✗ Entfernen";
                         lbStatusBtn.style.background = "#f44336";
@@ -202,9 +232,8 @@
                     details += `Release: <b>${card.release || 'N/A'}</b><br>`;
                     details += `Illustrator: <b>${card.illustrator || 'N/A'}</b></div>`;
                     
-                    // Cardmarket Button
-                                        const cmQuery = encodeURIComponent(`${card.kürzel || 'Pikachu'}${card.number || ''}`);
-                                        details += `<button class="lb-btn" style="background: #3498db; color: white; margin-top: 15px;" onclick="window.open('https://www.cardmarket.com/de/Pokemon/Products/Search?searchString=${cmQuery}', '_blank')">Cardmarket Suche</button>`;
+                    const cmQuery = encodeURIComponent(`${card.kürzel || 'Pikachu'}${card.number || ''}`);
+                    details += `<button class="lb-btn" style="background: #3498db; color: white; margin-top: 15px;" onclick="window.open('https://www.cardmarket.com/de/Pokemon/Products/Search?searchString=${cmQuery}', '_blank')">Cardmarket Suche</button>`;
                     
                     lbDetails.innerHTML = details;
                     document.getElementById('lightbox').style.display='flex'; 
@@ -215,7 +244,7 @@
             document.getElementById('n-owned').innerText = allData.filter(c => c.owned).length;
             document.getElementById('n-missing').innerText = allData.filter(c => !c.owned).length;
             
-            const maxPage = Math.max(0, Math.ceil(filtered.length / 12) - 1);
+            const maxPage = Math.max(0, Math.ceil(filtered.length / pageSize) - 1);
             document.getElementById('page-indicator').innerText = `Seite ${page + 1} / ${maxPage + 1}`;
         }
 
@@ -223,7 +252,6 @@
             const card = allData.find(c => c.id === activeId);
             const newVal = !card.owned;
             await setOwnership(newVal);
-            // Update button label immediately for the open lightbox
             const lbStatusBtn = document.getElementById('lb-status-btn');
             if (newVal) {
                 lbStatusBtn.innerText = "✗ Entfernen";
@@ -247,7 +275,6 @@
 
         function setFilter(f) { filter = f; page = 0; document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.id === 'f-'+f)); render(); }
         
-        // Swipe logic
         let xDown = null;
         document.addEventListener('touchstart', e => xDown = e.touches[0].clientX);
         document.addEventListener('touchend', e => {
@@ -255,7 +282,8 @@
             const diff = xDown - e.changedTouches[0].clientX;
             if(Math.abs(diff) > 50) {
                 const filtered = getFilteredList();
-                const maxPage = Math.max(0, Math.ceil(filtered.length / 12) - 1);
+                const pageSize = gridCols * gridRows;
+                const maxPage = Math.max(0, Math.ceil(filtered.length / pageSize) - 1);
                 
                 if(diff > 0) {
                     page = Math.min(maxPage, page + 1);
