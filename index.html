@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pika-Master</title>
+    <title>Nido-Master</title>
     <style>
         body { font-family: sans-serif; background: #0a0a0a; color: white; margin: 0; padding: 2px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
-        .controls { display: flex; justify-content: space-around; padding: 4px; background: #1e1e1e; border-radius: 6px; margin-bottom: 2px; flex-shrink: 0; height: 32px; align-items: center; }
-        .filter-btn { padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .filter-btn.active { background: #ffcc00; color: #000; }
+        .app-header { text-align: center; font-size: 16px; font-weight: bold; background: #2e1a47; padding: 10px; color: #4caf50; margin-bottom: 2px; flex-shrink: 0; border-bottom: 2px solid #8e44ad; }
+        .controls { display: flex; justify-content: space-around; padding: 4px; background: #181124; border-radius: 6px; margin-bottom: 2px; flex-shrink: 0; height: 32px; align-items: center; border: 1px solid #4a235a; }
+        .filter-btn { padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; background: #2a1b3d; color: #ccc; }
+        .filter-btn.active { background: #4caf50; color: #fff; }
         
         #binder { 
             display: flex !important; 
@@ -70,11 +71,15 @@
         }
         
         #lightbox { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
-        .lb-box { background: #222; padding: 30px 20px; border-radius: 14px; text-align: center; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; border: 2px solid #ffcc00; box-sizing: border-box; }
+        .lb-box { background: #222; padding: 30px 20px; border-radius: 14px; text-align: center; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; border: 2px solid #8e44ad; box-sizing: border-box; }
         .lb-btn { padding: 16px 24px; margin: 12px 0; width: 100%; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
+    <div class="app-header">Nido-Master</div>
+    <div style="padding: 5px;">
+        <input type="text" id="search-input" placeholder="Suche..." oninput="filterData()" style="width: 100%; padding: 8px; box-sizing: border-box; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff;">
+    </div>
     <div class="controls">
         <button class="filter-btn active" id="f-all" onclick="setFilter('all')">Alle (<span id="n-all">0</span>)</button>
         <button class="filter-btn" id="f-owned" onclick="setFilter('owned')">Besitz (<span id="n-owned">0</span>)</button>
@@ -94,18 +99,16 @@
 
     <script src="capacitor.js"></script>
     <script>
-        const SUPABASE_URL = "https://ciwuqspejmsaxwpibyjj.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpd3Vxc3Blam1zYXh3cGlieWpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MjM2NzMsImV4cCI6MjEwMTQ5OTY3M30.cNOEk-mffXt-vWtm_EHn8feSPy3SahvajxzRd8oQ6vY";
+        const SUPABASE_URL = "https://iykeycdjjzpxmfbkhvzd.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_0OSp-YLaZIQMjU5E0mNiLw_6PKo6QED";
         
         let allData = [];
         let filter = 'all';
         let page = 0;
         let activeId = null;
-
+        let searchTerm = '';
         function getImageUrl(card) {
-            const absoluteIndex = allData.findIndex(c => c.id === card.id);
-            console.log("Card ID:", card.id, "Absolute Index:", absoluteIndex);
-            return `https://raw.githubusercontent.com/teamgamefreak/pikachu-data/main/www/images/${absoluteIndex}.jpg`;
+            return `https://raw.githubusercontent.com/teamgamefreak/nido-images/main/images/${card.image}?t=${Date.now()}`;
         }
 
         async function init() {
@@ -118,30 +121,70 @@
                 allData.sort((a, b) => a.id.localeCompare(b.id));
             } catch (e) {
                 console.error("Supabase failed, checking local data...", e);
-                // Load local data.js if it exists
             }
+            render();
+            setInterval(checkForChanges, 5000);
+        }
+
+        async function checkForChanges() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/cards?select=id,owned`, {
+                    headers: {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY}
+                });
+                const newData = await res.json();
+                if (newData.length !== allData.length) {
+                    location.reload();
+                    return;
+                }
+                for (let i = 0; i < newData.length; i++) {
+                    const current = allData.find(c => c.id === newData[i].id);
+                    if (!current || current.owned !== newData[i].owned) {
+                        location.reload();
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error("Polling error:", e);
+            }
+        }
+
+        function filterData() {
+            searchTerm = document.getElementById('search-input').value.toLowerCase();
+            page = 0;
             render();
         }
 
+        function getFilteredList() {
+            let filtered = filter === 'all' ? allData : allData.filter(c => filter === 'owned' ? c.owned : !c.owned);
+            if (searchTerm) {
+                filtered = filtered.filter(c => 
+                    (c.set && c.set.toLowerCase().includes(searchTerm)) || 
+                    (c.number && c.number.toString().toLowerCase().includes(searchTerm)) ||
+                    (c.kürzel && c.kürzel.toLowerCase().includes(searchTerm)) ||
+                    (c.id && c.id.toLowerCase().includes(searchTerm))
+                );
+            }
+            return filtered;
+        }
+
         function render() {
-            const filtered = filter === 'all' ? allData : allData.filter(c => filter === 'owned' ? c.owned : !c.owned);
+            const filtered = getFilteredList();
             const container = document.getElementById('binder');
             container.innerHTML = '';
             const start = page * 12;
             filtered.slice(start, start + 12).forEach((card, idx) => {
-                const absoluteIndex = allData.findIndex(c => c.id === card.id);
                 const div = document.createElement('div');
                 div.className = 'card ' + (card.owned ? 'owned' : 'missing');
-                div.innerHTML = '<img src="' + getImageUrl(card) + '" onerror="this.src=\'images/placeholder.jpg\'"><div class="card-name">' + card.set + '</div>';
+                div.innerHTML = '<img src="' + getImageUrl(card) + '"><div class="card-name">' + card.set + '</div>';
                 div.onclick = () => {
                     activeId = card.id; 
+                    console.log("Lightbox opened for ID:", activeId);
                     const lbTitle = document.getElementById('lb-title');
                     const lbDetails = document.getElementById('lb-details');
                     const lbStatusBtn = document.getElementById('lb-status-btn');
                     
-                    lbTitle.innerText = `Pikachu (Nr. ${card.number || '---'})`;
+                    lbTitle.innerText = `${card.set || 'N/A'} ${card.number || '---'}`;
                     
-                    // Schalter-Logik
                     if (card.owned) {
                         lbStatusBtn.innerText = "✗ Entfernen";
                         lbStatusBtn.style.background = "#f44336";
@@ -150,7 +193,7 @@
                         lbStatusBtn.style.background = "#4caf50";
                     }
                     lbStatusBtn.onclick = () => { toggleOwnership(); };
-                    
+
                     let details = `<div style="font-size: 15px; line-height: 1.6;">Set: <b>${card.set || 'N/A'}</b><br>`;
                     if (card.edition && card.edition !== 'non') {
                         details += `Edition: <b>${card.edition}</b><br>`;
@@ -158,6 +201,10 @@
                     details += `Rarität: <b>${card.rarity || 'N/A'}</b><br>`;
                     details += `Release: <b>${card.release || 'N/A'}</b><br>`;
                     details += `Illustrator: <b>${card.illustrator || 'N/A'}</b></div>`;
+                    
+                    // Cardmarket Button
+                                        const cmQuery = encodeURIComponent(`${card.kürzel || 'Pikachu'}${card.number || ''}`);
+                                        details += `<button class="lb-btn" style="background: #3498db; color: white; margin-top: 15px;" onclick="window.open('https://www.cardmarket.com/de/Pokemon/Products/Search?searchString=${cmQuery}', '_blank')">Cardmarket Suche</button>`;
                     
                     lbDetails.innerHTML = details;
                     document.getElementById('lightbox').style.display='flex'; 
@@ -189,13 +236,22 @@
 
         async function setOwnership(val) {
             const card = allData.find(c => c.id === activeId);
+            if (!card) return;
             card.owned = val;
             render();
-            await fetch(`${SUPABASE_URL}/rest/v1/cards?id=eq.${card.id}`, {
-                method: 'PATCH',
-                headers: {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json'},
-                body: JSON.stringify({ owned: val })
-            });
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/cards?id=eq.${encodeURIComponent(card.id)}`, {
+                    method: 'PATCH',
+                    headers: {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal'},
+                    body: JSON.stringify({ owned: val })
+                });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    console.error("Supabase PATCH error:", res.status, errText);
+                }
+            } catch (err) {
+                console.error("Network error during ownership update:", err);
+            }
         }
 
         function setFilter(f) { filter = f; page = 0; document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.id === 'f-'+f)); render(); }
@@ -207,7 +263,7 @@
             if(!xDown) return;
             const diff = xDown - e.changedTouches[0].clientX;
             if(Math.abs(diff) > 50) {
-                const filtered = filter === 'all' ? allData : allData.filter(c => filter === 'owned' ? c.owned : !c.owned);
+                const filtered = getFilteredList();
                 const maxPage = Math.max(0, Math.ceil(filtered.length / 12) - 1);
                 
                 if(diff > 0) {
